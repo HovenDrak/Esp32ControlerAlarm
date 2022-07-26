@@ -12,7 +12,7 @@ WiFiClientSecure espClient;
 PubSubClient client(espClient);
 ApiControler controlApi;
 MqttManager controlMqtt;
-IOManager ioControl;
+IOManager controlIO;
 Variables varMqtt;
 
 static const char *ROOT_CA PROGMEM = R"EOF(
@@ -66,15 +66,16 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 
   JSONVar msgMqttJson = JSON.parse(msgMqtt);
-  Serial.println("[MQTT] MENSAGEM RECEBIDA >>> Topico: " + String(topic) + " Mensagem: " + msgMqttJson);
+  Serial.println("[MQTT] MENSAGEM RECEBIDA >>> Topico: " + String(topic) + " Mensagem: " + JSON.stringify(msgMqttJson));
 
   if(topico.equals(varMqtt.TOPIC_CMND_ALARM)){ 
     String cmnd = JSON.stringify(msgMqttJson[0]["newState"]);
     String user = JSON.stringify(msgMqttJson[1]["user"]);
     controlMqtt.cmndAlarm(cmnd, user);
-  } if else(topico.equals(varMqtt.TOPIC_CMND_ALARM_BYPASS)){
-      for(int i = 1; i < msgMqttJson["setor_bypass"].length(); i++){
-        
+  } else if (topico.equals(varMqtt.TOPIC_CMND_ALARM_BYPASS)){
+      for(int i = 0; i < msgMqttJson["setor_bypass"].length(); i++){
+        int setor = msgMqttJson["setor_bypass"][i]["setor"];
+        controlIO.setorBypass(setor);
       }
   } else {
     Serial.println("[MQTT] TOPICO NÃO IDENTIFICADO!!!");
@@ -157,8 +158,8 @@ void MqttManager::consultAllState(){
 void MqttManager::cmndAlarm(String cmnd, String user){
   Serial.println("[ESP32] COMANDO DE ALARME FOI REQUISITADO PELO USUÁRIO: " + user);
   if(cmnd.equals(varMqtt.CMND_ARM)){
-    if(ioControl.verifyCanArm()){
-      ioControl.panelArm();
+    if(controlIO.verifyCanArm()){
+      controlIO.panelArm();
       Serial.println("[ESP32] PAINEL ARMADO.");
       if(user.equals("alexa") || user.equals("mobile")){
         controlApi.createLog("Casa Armado", user);
@@ -170,14 +171,14 @@ void MqttManager::cmndAlarm(String cmnd, String user){
     }
   } 
   else if (cmnd.equals(varMqtt.CMND_DESARM)){ 
-    ioControl.panelDisarm();
+    controlIO.panelDisarm();
     Serial.println("[ESP32] PAINEL DESARMADO.");
     if(user.equals("alexa") || user.equals("mobile")){
       controlApi.createLog("Casa Desarmado", user);
     }
   } 
   else if (cmnd.equals(varMqtt.CMND_VIOLED)){ 
-    ioControl.panelViolated();
+    controlIO.panelViolated();
     controlApi.createLog("Casa em Disparo", "esp32");
   } 
   else { Serial.println("[ESP32] COMANDO NAO RECONHECIDO: " + cmnd); }

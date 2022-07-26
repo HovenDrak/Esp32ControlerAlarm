@@ -31,12 +31,15 @@ void IOManager::sensorCheckAll(){
         for(int i = 0; i < 4 ; i++){
             switch (digitalRead(varIO.PIN_IN[i])){
                 case 0:
-                    if(STATUS_PIN_IN[i] != 0){
+                    if(STATUS_PIN_IN[i] != 0 || STATUS_PIN_IN[i] == 2){
                         STATUS_PIN_IN[i] = 0;
                         mqttControl.updateStateMqttApi(TOPIC_PIN_IN[i], "\"fechado\"");
                     }
                     break;
                 case 1:
+                    if(STATUS_PIN_IN[i] == 2){
+                        break;
+                    }
                     if(mqttControl.getcurrentAlarmState().equals(varIO.CMND_ARM)){
                         STATUS_PIN_IN[i] = 1;
                         mqttControl.cmndAlarm(varIO.CMND_VIOLED, "SYSTEM");
@@ -97,6 +100,10 @@ boolean IOManager::verifyCanArm(){
         }
     }
     return b;
+}
+
+void IOManager::setorBypass(int setor){
+    STATUS_PIN_IN[setor] = 2;
 }
 
 
