@@ -10,6 +10,7 @@ class Variables{
         // -------------X CONST MQTT X------------- // 
         const char* MQTT_SERVER = "bbfb08f6f1b84ffebf8b0c4fbbcd0e90.s1.eu.hivemq.cloud";
         const int MQTT_PORT = 8883;
+        const char* TOPIC_CMND_ALARM_BYPASS = "cmnd/alarme/bypass";
         const char* TOPIC_CMND_ALARM = "cmnd/alarme";
         const char* TOPIC_SENSOR = "cmnd/sensor";
         const char* MQTT_PASSWORD = "67Esp3267";
@@ -24,11 +25,10 @@ class Variables{
         int PIN_OUTS[2] = {25, 26};
         int PIN_DESARM = 25;
         int PIN_ARM = 26;
-        int LIGHT_1 = 16;
         
         // -------------X CONST API X------------- // 
         String hostApi = "http://api-tcc-oficial.herokuapp.com";
-        String pathStatusDevice = "/status/device/32";
-        String pathUpdate = "/update/status";
-        String pathStatus = "/status";
+        String pathUpdate = "/alarm/update/status";
+        String pathStatus = "/alarm/status";
+        String pathCreateLog = "/create/log";
 };

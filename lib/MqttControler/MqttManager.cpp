@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include <iostream>
 #include <Const.h>
+#include <JSON.h>
 
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
@@ -57,17 +58,24 @@ MqttManager::MqttManager(){}
 
 void callback(char* topic, byte* payload, unsigned int length) {
 
-  String msg = "";
+  String msgMqtt = "";
   String topico = String(topic);
   
   for (int i = 0; i < length; i++){
-    msg += (char)payload[i];
+    msgMqtt += (char)payload[i];
   }
 
-  Serial.println("[MQTT] MENSAGEM RECEBIDA >>> Topico: " + String(topic) + " Mensagem: " + msg);
+  JSONVar msgMqttJson = JSON.parse(msgMqtt);
+  Serial.println("[MQTT] MENSAGEM RECEBIDA >>> Topico: " + String(topic) + " Mensagem: " + msgMqttJson);
 
   if(topico.equals(varMqtt.TOPIC_CMND_ALARM)){ 
-    controlMqtt.cmndAlarm(msg);
+    String cmnd = JSON.stringify(msgMqttJson[0]["newState"]);
+    String user = JSON.stringify(msgMqttJson[1]["user"]);
+    controlMqtt.cmndAlarm(cmnd, user);
+  } if else(topico.equals(varMqtt.TOPIC_CMND_ALARM_BYPASS)){
+      for(int i = 1; i < msgMqttJson["setor_bypass"].length(); i++){
+        
+      }
   } else {
     Serial.println("[MQTT] TOPICO NÃO IDENTIFICADO!!!");
   }
@@ -87,6 +95,12 @@ void MqttManager::reconnect() {
       canArm = "y";
       consultAllState();
       
+    } else if(client.state() == -1) {
+      clientConnected = false;
+      Serial.print("[MQTT] FALHOU, STATE = ");
+      Serial.print(client.state());
+      Serial.println("PROXIMA TENTATIVA EM 3s...");
+      delay(3000);
 
     } else if(client.state() == -2){
       Serial.println("[MQTT] FALHOU, STATE = -2");
@@ -136,27 +150,36 @@ void MqttManager::consultAllState(){
   while(result.equals("ERROR")){
     result = controlApi.getStatus("alarme");
   }
-  cmndAlarm(result);
+  cmndAlarm(result, "SYSTEM");
   delay(200);
 }
 
-void MqttManager::cmndAlarm(String cmnd){
-  Serial.println("[ESP32] COMANDO DE ALARME FOI REQUISITADO.");
+void MqttManager::cmndAlarm(String cmnd, String user){
+  Serial.println("[ESP32] COMANDO DE ALARME FOI REQUISITADO PELO USUÁRIO: " + user);
   if(cmnd.equals(varMqtt.CMND_ARM)){
     if(ioControl.verifyCanArm()){
       ioControl.panelArm();
       Serial.println("[ESP32] PAINEL ARMADO.");
+      if(user.equals("alexa") || user.equals("mobile")){
+        controlApi.createLog("Casa Armado", user);
+      }
     } else{
       Serial.println("[ESP32] NÃO FOI POSSIVEL EFETUAR O ARME, EXISTE SETOR ABERTO.");
-      controlMqtt.updateStateMqtt("error/alarme", "Existe setor aberto");
+      controlMqtt.updateStateMqtt("status/error/alarme", "Existe setor aberto");
       return;
     }
   } 
   else if (cmnd.equals(varMqtt.CMND_DESARM)){ 
     ioControl.panelDisarm();
     Serial.println("[ESP32] PAINEL DESARMADO.");
+    if(user.equals("alexa") || user.equals("mobile")){
+      controlApi.createLog("Casa Desarmado", user);
+    }
   } 
-  else if (cmnd.equals(varMqtt.CMND_VIOLED)){ ioControl.panelViolated();}
+  else if (cmnd.equals(varMqtt.CMND_VIOLED)){ 
+    ioControl.panelViolated();
+    controlApi.createLog("Casa em Disparo", "esp32");
+  } 
   else { Serial.println("[ESP32] COMANDO NAO RECONHECIDO: " + cmnd); }
 
   currentAlarmState = cmnd;
@@ -179,4 +202,6 @@ void MqttManager::setCanArm(String validation){
 String MqttManager::getCanArm(){
   return canArm;
 }
+
+
 

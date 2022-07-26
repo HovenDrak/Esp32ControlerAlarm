@@ -11,7 +11,7 @@ class MqttManager{
         String getcurrentLight1State();
         String getcurrentAlarmState();
         boolean getClientConnected();
-        void cmndAlarm(String cmnd);
+        void cmndAlarm(String cmnd, String user);
         void consultAllState();
         void mqttSetConfigs();
         String getCanArm();

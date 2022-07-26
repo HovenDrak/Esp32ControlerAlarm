@@ -50,9 +50,32 @@ void ApiControler::updateStatus(String service, String newState){
         updateStatus(service, newState);
     } else{
         String response = http.getString();
+        Serial.println("[HTTP] ERROR REQUEST UPDATE STATUS!!!");
         Serial.println("[CODE]: " + responseCode);
         Serial.println("[BODY]: " + response);
     }
     http.end();
 }
 
+void ApiControler::createLog(String description, String user){
+    Serial.println("[HTTP] CRIANDO LOG >> Description: " + description + " User: " + user);
+
+    http.begin(varApi.hostApi + varApi.pathCreateLog);
+    http.addHeader("Content-Type", "application/json");           
+  
+    int responseCode = http.POST("{\"desc\":\"" + description + "\", \"user\":\"" + user + "\"}");
+    delay(2000);
+  
+    if(responseCode == 200){
+        Serial.println("[HTTP] LOG CREATE SUCCESS!!!");
+    } else if(responseCode == 500){
+        Serial.println("[ERROR 500], NOVA TENTATIVA!!!");
+        createLog(description, user);
+    } else{
+        String response = http.getString();
+        Serial.println("[HTTP] ERROR REQUEST LOG!!!");
+        Serial.println("[CODE]: " + responseCode);
+        Serial.println("[BODY]: " + response);
+    }
+    http.end();
+}

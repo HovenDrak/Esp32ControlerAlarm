@@ -39,7 +39,7 @@ void IOManager::sensorCheckAll(){
                 case 1:
                     if(mqttControl.getcurrentAlarmState().equals(varIO.CMND_ARM)){
                         STATUS_PIN_IN[i] = 1;
-                        mqttControl.cmndAlarm(varIO.CMND_VIOLED);
+                        mqttControl.cmndAlarm(varIO.CMND_VIOLED, "SYSTEM");
                         mqttControl.updateStateMqttApi(TOPIC_PIN_IN[i], "\"aberto\"");
                     } else{
                         if(STATUS_PIN_IN[i] != 1){
