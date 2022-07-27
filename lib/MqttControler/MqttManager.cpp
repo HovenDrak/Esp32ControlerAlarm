@@ -92,6 +92,7 @@ void MqttManager::reconnect() {
       Serial.println("CONECTADO!!!");
       client.subscribe(varMqtt.TOPIC_CMND_ALARM);
       client.subscribe(varMqtt.TOPIC_SENSOR);
+      client.subscribe(varMqtt.TOPIC_CMND_ALARM_BYPASS);
       clientConnected = true;
       canArm = "y";
       consultAllState();

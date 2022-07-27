@@ -26,7 +26,6 @@ void IOManager::pinSetConfig(){
 }
 
 void IOManager::sensorCheckAll(){
-
     if(mqttControl.getClientConnected()){
         for(int i = 0; i < 4 ; i++){
             switch (digitalRead(varIO.PIN_IN[i])){
