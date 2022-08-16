@@ -19,7 +19,6 @@ String ApiControler::getStatus(String service){
     http.addHeader("Content-Type", "application/json");           
   
     int responseCode = http.sendRequest("GET", "{\"name\":\"" + service + "\"}");
-    delay(2000);
 
     String responseBody = http.getString();
   
@@ -41,7 +40,6 @@ void ApiControler::updateStatus(String service, String newState){
     http.addHeader("Content-Type", "application/json");           
   
     int responseCode = http.PUT("{\"name\":\"" + service + "\", \"status\":" + newState + "}");
-    delay(2000);
   
     if(responseCode == 200){
         Serial.println("[HTTP] UPDATE STATUS SUCESS!!!");
@@ -57,20 +55,19 @@ void ApiControler::updateStatus(String service, String newState){
     http.end();
 }
 
-void ApiControler::createLog(String description, String user){
-    Serial.println("[HTTP] CRIANDO LOG >> Description: " + description + " User: " + user);
+void ApiControler::createEvent(String description, String user, String type){
+    Serial.println("[HTTP] CRIANDO LOG >> Description: " + description + " User: " + user + " TypeEvent: " + type);
 
     http.begin(varApi.hostApi + varApi.pathCreateLog);
     http.addHeader("Content-Type", "application/json");           
   
-    int responseCode = http.POST("{\"desc\":\"" + description + "\", \"user\":\"" + user + "\"}");
-    delay(2000);
+    int responseCode = http.sendRequest("POST", "{\"desc\":\"" + description + "\", \"user\":" + user + ", \"type\":\"" + type + "\"}");
   
     if(responseCode == 200){
         Serial.println("[HTTP] LOG CREATE SUCCESS!!!");
     } else if(responseCode == 500){
         Serial.println("[ERROR 500], NOVA TENTATIVA!!!");
-        createLog(description, user);
+        createEvent(description, user, type);
     } else{
         String response = http.getString();
         Serial.println("[HTTP] ERROR REQUEST LOG!!!");

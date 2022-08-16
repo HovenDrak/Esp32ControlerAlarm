@@ -4,7 +4,7 @@
 class ApiControler{
     public:
         ApiControler();
-        void updateStatus(String service, String newState);
-        void createLog(String description, String user);
         String getStatus(String service);
+        void updateStatus(String service, String newState);
+        void createEvent(String description, String user, String type);
 };

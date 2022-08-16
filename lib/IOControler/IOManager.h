@@ -4,7 +4,9 @@ class IOManager{
     public:
         IOManager();
         void stateLight(int pos, boolean active);
+        void setPanelVioled(boolean violed);
         void setorBypass(int setor);
+        boolean verifyPanelVioled();
         void getStateSensorMqtt();
         boolean verifyCanArm();
         void sensorCheckAll();

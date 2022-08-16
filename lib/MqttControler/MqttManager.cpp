@@ -152,7 +152,7 @@ void MqttManager::consultAllState(){
   while(result.equals("ERROR")){
     result = controlApi.getStatus("alarme");
   }
-  cmndAlarm(result, "SYSTEM");
+  cmndAlarm(result, "\"Central\"");
   delay(200);
 }
 
@@ -162,9 +162,11 @@ void MqttManager::cmndAlarm(String cmnd, String user){
     if(controlIO.verifyCanArm()){
       controlIO.panelArm();
       Serial.println("[ESP32] PAINEL ARMADO.");
-      if(user.equals("alexa") || user.equals("mobile")){
-        controlApi.createLog("Casa Armado", user);
+
+      if(user.equals("\"Alexa\"") || user.equals("\"Mobile\"")){
+        controlApi.createEvent("Casa Armado", user, "arm");
       }
+
     } else{
       Serial.println("[ESP32] NÃO FOI POSSIVEL EFETUAR O ARME, EXISTE SETOR ABERTO.");
       controlMqtt.updateStateMqtt("status/error/alarme", "Existe setor aberto");
@@ -174,13 +176,13 @@ void MqttManager::cmndAlarm(String cmnd, String user){
   else if (cmnd.equals(varMqtt.CMND_DESARM)){ 
     controlIO.panelDisarm();
     Serial.println("[ESP32] PAINEL DESARMADO.");
-    if(user.equals("alexa") || user.equals("mobile")){
-      controlApi.createLog("Casa Desarmado", user);
+    if(user.equals("\"Alexa\"") || user.equals("\"Mobile\"")){
+      controlApi.createEvent("Casa Desarmado", user, "disarm");
     }
   } 
   else if (cmnd.equals(varMqtt.CMND_VIOLED)){ 
-    controlIO.panelViolated();
-    controlApi.createLog("Casa em Disparo", "esp32");
+    controlIO.setPanelVioled(true);
+    controlApi.createEvent("Casa em Disparo", user, "violed");
   } 
   else { Serial.println("[ESP32] COMANDO NAO RECONHECIDO: " + cmnd); }
 

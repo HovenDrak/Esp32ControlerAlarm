@@ -12,6 +12,7 @@ Variables varIO;
 
 String TOPIC_PIN_IN[4] = {"setor1", "setor2", "setor3", "setor4"};
 int STATUS_PIN_IN[4] = {0, 0, 0, 0};
+boolean panelVioled = false;
 
 IOManager::IOManager(){}
 
@@ -41,8 +42,12 @@ void IOManager::sensorCheckAll(){
                     }
                     if(mqttControl.getcurrentAlarmState().equals(varIO.CMND_ARM)){
                         STATUS_PIN_IN[i] = 1;
-                        mqttControl.cmndAlarm(varIO.CMND_VIOLED, "SYSTEM");
+                        panelVioled = true;
+                        mqttControl.cmndAlarm(varIO.CMND_VIOLED, "\"Central\"");
+                        delay(1000);
                         mqttControl.updateStateMqttApi(TOPIC_PIN_IN[i], "\"aberto\"");
+                        delay(1000);
+                        apiControl.createEvent("em Disparo", "\"Central\"", "setor"+String(i)+"Violed");
                     } else{
                         if(STATUS_PIN_IN[i] != 1){
                             STATUS_PIN_IN[i] = 1;
@@ -59,10 +64,6 @@ void IOManager::sensorCheckAll(){
     } else{
         Serial.println("[ESP32] CLIENTE MQTT DESCONECTADO, IMPOSSIVEL LER OS SENSORES");
     }
-    if(mqttControl.getcurrentAlarmState().equals(varIO.CMND_VIOLED)){
-        panelViolated();
-        Serial.println("[ESP32] PAINEL VIOLADO!!!");
-    }
 }
 
 void IOManager::panelArm(){
@@ -71,6 +72,7 @@ void IOManager::panelArm(){
 }
 
 void IOManager::panelDisarm(){
+    panelVioled = false;
     digitalWrite(varIO.PIN_ARM, LOW);
     digitalWrite(varIO.PIN_DESARM, HIGH);
 }
@@ -88,6 +90,9 @@ void IOManager::panelViolated(){
 
 boolean IOManager::verifyCanArm(){
     boolean b = true;
+    if(panelVioled){
+        return false;
+    }
     for(int i = 0; i < 4 ; i++){
         switch(STATUS_PIN_IN[i]){
             case 0:
@@ -101,8 +106,17 @@ boolean IOManager::verifyCanArm(){
     return b;
 }
 
+boolean IOManager::verifyPanelVioled(){
+    return panelVioled;
+}
+
+void IOManager::setPanelVioled(boolean violed){
+    panelVioled = violed;
+}
+
 void IOManager::setorBypass(int setor){
     STATUS_PIN_IN[setor] = 2;
 }
+
 
 
