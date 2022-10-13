@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"name": "Esp32ControlerAlarm",
+			"path": "."
+		}
+	],
+	"settings": {
+		"totvsLanguageServer.welcomePage": false
+	}
+}

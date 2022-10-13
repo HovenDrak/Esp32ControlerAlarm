@@ -73,6 +73,12 @@ void IOManager::panelArm(){
 
 void IOManager::panelDisarm(){
     panelVioled = false;
+    for(int i = 0; i < 4; i++){
+        if(STATUS_PIN_IN[i] == 2){
+            STATUS_PIN_IN[i] == 1;
+            mqttControl.updateStateMqttApi(TOPIC_PIN_IN[i], "\"aberto\"");
+        }
+    }
     digitalWrite(varIO.PIN_ARM, LOW);
     digitalWrite(varIO.PIN_DESARM, HIGH);
 }
@@ -116,7 +122,6 @@ void IOManager::setPanelVioled(boolean violed){
 
 void IOManager::setorBypass(int setor){
     STATUS_PIN_IN[setor] = 2;
+    mqttControl.updateStateMqttApi(TOPIC_PIN_IN[setor], "\"bypassed\"");
 }
-
-
 

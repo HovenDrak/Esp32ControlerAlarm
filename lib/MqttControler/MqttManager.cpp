@@ -72,6 +72,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     String cmnd = JSON.stringify(msgMqttJson[0]["newState"]);
     String user = JSON.stringify(msgMqttJson[1]["user"]);
     controlMqtt.cmndAlarm(cmnd, user);
+
   } else if (topico.equals(varMqtt.TOPIC_CMND_ALARM_BYPASS)){
       for(int i = 0; i < msgMqttJson["setor_bypass"].length(); i++){
         int setor = msgMqttJson["setor_bypass"][i]["setor"];
