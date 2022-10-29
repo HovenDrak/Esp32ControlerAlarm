@@ -7,6 +7,7 @@ class IOManager{
         void setPanelVioled(boolean violed);
         void setorBypass(int setor);
         boolean verifyPanelVioled();
+        void verifySensorsBypass();
         void getStateSensorMqtt();
         boolean verifyCanArm();
         void sensorCheckAll();

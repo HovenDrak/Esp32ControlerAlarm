@@ -125,3 +125,11 @@ void IOManager::setorBypass(int setor){
     mqttControl.updateStateMqttApi(TOPIC_PIN_IN[setor], "\"bypassed\"");
 }
 
+void IOManager::verifySensorsBypass(){
+    for(int i = 0; i < 4; i++){
+        if(STATUS_PIN_IN[i] == 2){
+            STATUS_PIN_IN[i] = 1;
+        }
+    }
+}
+

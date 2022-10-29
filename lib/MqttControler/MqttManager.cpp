@@ -74,7 +74,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     controlMqtt.cmndAlarm(cmnd, user);
 
   } else if (topico.equals(varMqtt.TOPIC_CMND_ALARM_BYPASS)){
-      for(int i = 0; i < msgMqttJson["setor_bypass"].length(); i++){
+      for (int i = 0; i < msgMqttJson["setor_bypass"].length(); i++){
         int setor = msgMqttJson["setor_bypass"][i]["setor"];
         controlIO.setorBypass(setor);
       }
@@ -98,21 +98,20 @@ void MqttManager::reconnect() {
       canArm = "y";
       consultAllState();
       
-    } else if(client.state() == -1) {
+    } else if (client.state() == -1) {
       clientConnected = false;
       Serial.print("[MQTT] FALHOU, STATE = ");
       Serial.print(client.state());
       Serial.println("PROXIMA TENTATIVA EM 3s...");
       delay(3000);
 
-    } else if(client.state() == -2){
+    } else if (client.state() == -2){
       Serial.println("[MQTT] FALHOU, STATE = -2");
       Serial.println("[ESP32] Reiniciando ESP...");
       clientConnected = false;
       ESP.restart();
-    }
-    
-    else {
+
+    } else {
       clientConnected = false;
       Serial.print("[MQTT] FALHOU, STATE = ");
       Serial.print(client.state());
@@ -137,10 +136,11 @@ void MqttManager::mqttRun(){
 
 void MqttManager::updateStateMqttApi(String service, String state){
   String topic = "status/" + service;
-
   Serial.println("[MQTT] ATUALIZANDO STATUS MQTT >>> Service: " + service + " Status: " + state);
+
   client.publish(topic.c_str(), state.c_str());
   delay(500);
+  
   controlApi.updateStatus(service, state);
   delay(500);
 }
@@ -155,6 +155,8 @@ void MqttManager::consultAllState(){
   }
   cmndAlarm(result, "\"Central\"");
   delay(200);
+
+  controlIO.verifySensorsBypass();
 }
 
 void MqttManager::cmndAlarm(String cmnd, String user){
