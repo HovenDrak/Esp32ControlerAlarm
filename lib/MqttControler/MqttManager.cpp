@@ -57,7 +57,6 @@ String canArm;
 MqttManager::MqttManager(){}
 
 void callback(char* topic, byte* payload, unsigned int length) {
-
   String msgMqtt = "";
   String topico = String(topic);
   
@@ -74,10 +73,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
     controlMqtt.cmndAlarm(cmnd, user);
 
   } else if (topico.equals(varMqtt.TOPIC_CMND_ALARM_BYPASS)){
-      for (int i = 0; i < msgMqttJson["setor_bypass"].length(); i++){
-        int setor = msgMqttJson["setor_bypass"][i]["setor"];
-        controlIO.setorBypass(setor);
-      }
+    String user = JSON.stringify(msgMqttJson["user"]);
+
+    for (int i = 0; i < msgMqttJson["setor_bypass"].length(); i++){
+      int setor = msgMqttJson["setor_bypass"][i]["setor"];
+      controlIO.setorBypass(setor, user);
+    }
+    controlMqtt.cmndAlarm(varMqtt.CMND_ARM, user);
+
   } else {
     Serial.println("[MQTT] TOPICO NÃO IDENTIFICADO!!!");
   }

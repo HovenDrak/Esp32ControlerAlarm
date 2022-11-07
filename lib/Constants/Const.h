@@ -21,6 +21,8 @@ class Variables{
         String CMND_ARM = "\"armado\"";
         
         // -------------X CONST PINS X------------- // 
+        String TOPIC_PIN_IN[4] = {"setor1", "setor2", "setor3", "setor4"};
+
         int PIN_IN[4] = {15, 13, 12, 14};
         int PIN_OUTS[2] = {25, 26};
         int PIN_DESARM = 25;

@@ -10,7 +10,6 @@ ApiControler apiControl;
 MqttManager mqttControl;
 Variables varIO;
 
-String TOPIC_PIN_IN[4] = {"setor1", "setor2", "setor3", "setor4"};
 int STATUS_PIN_IN[4] = {0, 0, 0, 0};
 boolean panelVioled = false;
 
@@ -33,7 +32,7 @@ void IOManager::sensorCheckAll(){
                 case 0:
                     if(STATUS_PIN_IN[i] != 0 || STATUS_PIN_IN[i] == 2){
                         STATUS_PIN_IN[i] = 0;
-                        mqttControl.updateStateMqttApi(TOPIC_PIN_IN[i], "\"fechado\"");
+                        mqttControl.updateStateMqttApi(varIO.TOPIC_PIN_IN[i], "\"fechado\"");
                     }
                     break;
                 case 1:
@@ -45,13 +44,13 @@ void IOManager::sensorCheckAll(){
                         panelVioled = true;
                         mqttControl.cmndAlarm(varIO.CMND_VIOLED, "\"Central\"");
                         delay(1000);
-                        mqttControl.updateStateMqttApi(TOPIC_PIN_IN[i], "\"aberto\"");
+                        mqttControl.updateStateMqttApi(varIO.TOPIC_PIN_IN[i], "\"aberto\"");
                         delay(1000);
                         apiControl.createEvent("em Disparo", "\"Central\"", "setor"+String(i)+"Violed");
                     } else{
                         if(STATUS_PIN_IN[i] != 1){
                             STATUS_PIN_IN[i] = 1;
-                            mqttControl.updateStateMqttApi(TOPIC_PIN_IN[i], "\"aberto\"");
+                            mqttControl.updateStateMqttApi(varIO.TOPIC_PIN_IN[i], "\"aberto\"");
                         }
                     }
                     break;
@@ -76,7 +75,7 @@ void IOManager::panelDisarm(){
     for(int i = 0; i < 4; i++){
         if(STATUS_PIN_IN[i] == 2){
             STATUS_PIN_IN[i] == 1;
-            mqttControl.updateStateMqttApi(TOPIC_PIN_IN[i], "\"aberto\"");
+            mqttControl.updateStateMqttApi(varIO.TOPIC_PIN_IN[i], "\"aberto\"");
         }
     }
     digitalWrite(varIO.PIN_ARM, LOW);
@@ -120,9 +119,13 @@ void IOManager::setPanelVioled(boolean violed){
     panelVioled = violed;
 }
 
-void IOManager::setorBypass(int setor){
+void IOManager::setorBypass(int setor, String user){
+    // for (String element : varIO.TOPIC_PIN_IN){
+    //     Serial.println(element);
+    // }
     STATUS_PIN_IN[setor] = 2;
-    mqttControl.updateStateMqttApi(TOPIC_PIN_IN[setor], "\"bypassed\"");
+    mqttControl.updateStateMqttApi(varIO.TOPIC_PIN_IN[setor], "\"bypassed\"");
+    apiControl.createEvent("Setor " + varIO.TOPIC_PIN_IN[setor] + " inibido", user, "bypass" + setor);
 }
 
 void IOManager::verifySensorsBypass(){
