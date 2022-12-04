@@ -19,14 +19,14 @@ String ApiControler::getStatus(String service){
     http.addHeader("Content-Type", "application/json");           
   
     int responseCode = http.sendRequest("GET", "{\"name\":\"" + service + "\"}");
-
     String responseBody = http.getString();
   
-    if(responseCode == 200){
+    if (responseCode == 200){
         JSONVar responseJson = JSON.parse(responseBody);
         http.end();
         return JSON.stringify(responseJson["status"]);
     } 
+    
     http.end();
     Serial.println("[HTTP]: CODE: " + responseCode);
     Serial.println("[HTTP]: BODY: " + responseBody);
@@ -41,12 +41,14 @@ void ApiControler::updateStatus(String service, String newState){
   
     int responseCode = http.PUT("{\"name\":\"" + service + "\", \"status\":" + newState + "}");
   
-    if(responseCode == 200){
+    if (responseCode == 200){
         Serial.println("[HTTP] UPDATE STATUS SUCESS!!!");
-    } else if(responseCode == 500){
+
+    } else if (responseCode == 500){
         Serial.println("[ERROR 500], NOVA TENTATIVA!!!");
         updateStatus(service, newState);
-    } else{
+
+    } else {
         String response = http.getString();
         Serial.println("[HTTP] ERROR REQUEST UPDATE STATUS!!!");
         Serial.println("[CODE]: " + responseCode);
@@ -59,19 +61,20 @@ void ApiControler::createEvent(String description, String user, String type){
     Serial.println("[HTTP] CRIANDO LOG >> Description: " + description + " User: " + user + " TypeEvent: " + type);
 
     http.begin(varApi.hostApi + varApi.pathCreateLog);
-    http.addHeader("Content-Type", "application/json");           
-  
+    http.addHeader("Content-Type", "application/json");  
+
     int responseCode = http.sendRequest("POST", "{\"desc\":\"" + description + "\", \"user\":" + user + ", \"type\":\"" + type + "\"}");
   
-    if(responseCode == 200){
+    if (responseCode == 200){
         Serial.println("[HTTP] LOG CREATE SUCCESS!!!");
-    } else if(responseCode == 500){
+
+    } else if (responseCode == 500){
         Serial.println("[ERROR 500], NOVA TENTATIVA!!!");
         createEvent(description, user, type);
+
     } else{
         String response = http.getString();
-        Serial.println("[HTTP] ERROR REQUEST LOG!!!");
-        Serial.println("[CODE]: " + responseCode);
+        Serial.println("[HTTP] ERROR " + String(responseCode) + "REQUEST LOG!!!");
         Serial.println("[BODY]: " + response);
     }
     http.end();

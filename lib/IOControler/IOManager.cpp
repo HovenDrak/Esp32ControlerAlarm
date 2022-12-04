@@ -16,39 +16,40 @@ boolean panelVioled = false;
 IOManager::IOManager(){}
 
 void IOManager::pinSetConfig(){
-    for(int i = 0; i < 2; i++){
+    for (int i = 0; i < 2; i++){
         pinMode(varIO.PIN_OUTS[i], OUTPUT);
         digitalWrite(varIO.PIN_OUTS[i], LOW);
     }
-    for(int i = 0; i < 4; i++){
+
+    for (int i = 0; i < 3; i++)
         pinMode(varIO.PIN_IN[i], INPUT_PULLUP);
-    }
 }
 
 void IOManager::sensorCheckAll(){
-    if(mqttControl.getClientConnected()){
-        for(int i = 0; i < 4 ; i++){
+    if (mqttControl.getClientConnected()){
+        for (int i = 0; i < 3 ; i++){
             switch (digitalRead(varIO.PIN_IN[i])){
                 case 0:
-                    if(STATUS_PIN_IN[i] != 0 || STATUS_PIN_IN[i] == 2){
+                    if (STATUS_PIN_IN[i] != 0 || STATUS_PIN_IN[i] == 2){
                         STATUS_PIN_IN[i] = 0;
                         mqttControl.updateStateMqttApi(varIO.TOPIC_PIN_IN[i], "\"fechado\"");
                     }
                     break;
                 case 1:
-                    if(STATUS_PIN_IN[i] == 2){
+                    if (STATUS_PIN_IN[i] == 2)
                         break;
-                    }
-                    if(mqttControl.getcurrentAlarmState().equals(varIO.CMND_ARM)){
+                    
+                    if (mqttControl.getcurrentAlarmState().equals(varIO.CMND_ARM)){
                         STATUS_PIN_IN[i] = 1;
                         panelVioled = true;
+
                         mqttControl.cmndAlarm(varIO.CMND_VIOLED, "\"Central\"");
-                        delay(1000);
+                        mqttControl.updateStateMqttApi("alarme", varIO.CMND_VIOLED);
                         mqttControl.updateStateMqttApi(varIO.TOPIC_PIN_IN[i], "\"aberto\"");
-                        delay(1000);
-                        apiControl.createEvent("em Disparo", "\"Central\"", "setor"+String(i)+"Violed");
-                    } else{
-                        if(STATUS_PIN_IN[i] != 1){
+                        apiControl.createEvent("em Disparo", "\"Central\"", "setor" + String(i) + "Violed");
+                        
+                    } else {
+                        if (STATUS_PIN_IN[i] != 1){
                             STATUS_PIN_IN[i] = 1;
                             mqttControl.updateStateMqttApi(varIO.TOPIC_PIN_IN[i], "\"aberto\"");
                         }
@@ -60,9 +61,8 @@ void IOManager::sensorCheckAll(){
                     break;
             }
         }
-    } else{
+    } else
         Serial.println("[ESP32] CLIENTE MQTT DESCONECTADO, IMPOSSIVEL LER OS SENSORES");
-    }
 }
 
 void IOManager::panelArm(){
@@ -72,8 +72,8 @@ void IOManager::panelArm(){
 
 void IOManager::panelDisarm(){
     panelVioled = false;
-    for(int i = 0; i < 4; i++){
-        if(STATUS_PIN_IN[i] == 2){
+    for (int i = 0; i < 3; i++){
+        if (STATUS_PIN_IN[i] == 2){
             STATUS_PIN_IN[i] == 1;
             mqttControl.updateStateMqttApi(varIO.TOPIC_PIN_IN[i], "\"aberto\"");
         }
@@ -95,11 +95,11 @@ void IOManager::panelViolated(){
 
 boolean IOManager::verifyCanArm(){
     boolean b = true;
-    if(panelVioled){
+    if(panelVioled)
         return false;
-    }
-    for(int i = 0; i < 4 ; i++){
-        switch(STATUS_PIN_IN[i]){
+    
+    for (int i = 0; i < 3 ; i++){
+        switch (STATUS_PIN_IN[i]){
             case 0:
                 b = true;
                 break;
@@ -129,7 +129,7 @@ void IOManager::setorBypass(int setor, String user){
 }
 
 void IOManager::verifySensorsBypass(){
-    for(int i = 0; i < 4; i++){
+    for(int i = 0; i < 3; i++){
         if(STATUS_PIN_IN[i] == 2){
             STATUS_PIN_IN[i] = 1;
         }

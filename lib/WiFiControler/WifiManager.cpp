@@ -8,14 +8,23 @@ Variables varWifi;
 WifiManager::WifiManager(){}
 
 void WifiManager::wifiCheckConnection(){
-  if (WiFi.status() == WL_CONNECTED){
-      return;
-  }
-  Serial.print("TENTANDO CONEXÃO WIFI...");
+	if (WiFi.status() == WL_CONNECTED)
+    	return;
+  	else
+    	Serial.println("WIFI DESCONECTADO!!!");
 
-  if (WiFi.begin(varWifi.WIFI_SSID, varWifi.WIFI_PASS) == WL_CONNECTED){
-      Serial.println("CONECTADO COM SUCESSO NA REDE WIFI!");
-      return;
-  }
-  Serial.println(WiFi.status());
+  	Serial.printf("[WIFI] CONECTANDO AO WIFI: %s \n", varWifi.WIFI_SSID);
+
+	WiFi.mode(WIFI_STA);
+  	WiFi.begin(varWifi.WIFI_SSID, varWifi.WIFI_PASS);
+
+	while (WiFi.status() != WL_CONNECTED) {
+		delay(500);
+		Serial.print(".");
+	}
+	randomSeed(micros());
+
+	Serial.println("[WIFI] WIFI CONECTADO!!!");
+  	Serial.print("[WIFI] IP ADDRESS: ");
+  	Serial.println(WiFi.localIP());
 }

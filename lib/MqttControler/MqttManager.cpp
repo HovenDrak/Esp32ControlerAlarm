@@ -54,164 +54,157 @@ String currentAlarmState;
 String result = "ERROR";
 String canArm;
 
-MqttManager::MqttManager(){}
+MqttManager::MqttManager() {}
 
-void callback(char* topic, byte* payload, unsigned int length) {
-  String msgMqtt = "";
-  String topico = String(topic);
-  
-  for (int i = 0; i < length; i++){
-    msgMqtt += (char)payload[i];
-  }
+void callback(char *topic, byte *payload, unsigned int length){
+    String msgMqtt = "";
+    String topico = String(topic);
 
-  JSONVar msgMqttJson = JSON.parse(msgMqtt);
-  Serial.println("[MQTT] MENSAGEM RECEBIDA >>> Topico: " + String(topic) + " Mensagem: " + JSON.stringify(msgMqttJson));
+    for (int i = 0; i < length; i++)
+        msgMqtt += (char)payload[i];
 
-  if(topico.equals(varMqtt.TOPIC_CMND_ALARM)){ 
-    String cmnd = JSON.stringify(msgMqttJson[0]["newState"]);
-    String user = JSON.stringify(msgMqttJson[1]["user"]);
-    controlMqtt.cmndAlarm(cmnd, user);
+    JSONVar msgMqttJson = JSON.parse(msgMqtt);
+    Serial.println("[MQTT] MENSAGEM RECEBIDA >>> Topico: " + String(topic) + " Mensagem: " + JSON.stringify(msgMqttJson));
 
-  } else if (topico.equals(varMqtt.TOPIC_CMND_ALARM_BYPASS)){
-    String user = JSON.stringify(msgMqttJson["user"]);
+    if (topico.equals(varMqtt.TOPIC_CMND_ALARM)) {
+        String cmnd = JSON.stringify(msgMqttJson[0]["newState"]);
+        String user = JSON.stringify(msgMqttJson[1]["user"]);
+        controlMqtt.cmndAlarm(cmnd, user);
 
-    for (int i = 0; i < msgMqttJson["setor_bypass"].length(); i++){
-      int setor = msgMqttJson["setor_bypass"][i]["setor"];
-      controlIO.setorBypass(setor, user);
+    } else if (topico.equals(varMqtt.TOPIC_CMND_ALARM_BYPASS)) {
+
+        String user = JSON.stringify(msgMqttJson["user"]);
+
+        for (int i = 0; i < msgMqttJson["setor_bypass"].length(); i++)
+        {
+            int setor = msgMqttJson["setor_bypass"][i]["setor"];
+            controlIO.setorBypass(setor, user);
+        }
+        controlMqtt.cmndAlarm(varMqtt.CMND_ARM, user);
+
+    } else
+        Serial.println("[MQTT] TOPICO NÃO IDENTIFICADO!!!");
+}
+
+void MqttManager::reconnect(){
+    while (!client.connected()){
+        Serial.print("[MQTT] TENTANDO SE CONECTAR AO BROKER MQTT, ");
+        varMqtt.CLIENT_ID += String(random(0xffff), HEX);
+
+        if (client.connect(varMqtt.CLIENT_ID.c_str(), varMqtt.MQTT_USER, varMqtt.MQTT_PASSWORD)){
+            Serial.println("CONECTADO!!!");
+            client.subscribe(varMqtt.TOPIC_CMND_ALARM);
+            client.subscribe(varMqtt.TOPIC_SENSOR);
+            client.subscribe(varMqtt.TOPIC_CMND_ALARM_BYPASS);
+            clientConnected = true;
+            canArm = "y";
+            consultAllState();
+
+        } else if (client.state() == -1) {
+            clientConnected = false;
+            Serial.print("[MQTT] FALHOU, STATE = ");
+            Serial.print(client.state());
+            Serial.println("PROXIMA TENTATIVA EM 3s...");
+            delay(3000);
+
+        } else if (client.state() == -2) {
+            Serial.println("[MQTT] FALHOU, STATE = -2");
+            Serial.println("[ESP32] Reiniciando ESP...");
+            clientConnected = false;
+            ESP.restart();
+
+        } else {
+            clientConnected = false;
+            Serial.print("[MQTT] FALHOU, STATE = ");
+            Serial.print(client.state());
+            Serial.println("PROXIMA TENTATIVA EM 3s...");
+            delay(3000);
+        }
     }
-    controlMqtt.cmndAlarm(varMqtt.CMND_ARM, user);
-
-  } else {
-    Serial.println("[MQTT] TOPICO NÃO IDENTIFICADO!!!");
-  }
 }
 
-void MqttManager::reconnect() {
-  while (!client.connected()) {
-    Serial.print("[MQTT] TENTANDO SE CONECTAR AO BROKER MQTT, ");
-
-    varMqtt.CLIENT_ID += String(random(0xffff), HEX);
-
-    if (client.connect(varMqtt.CLIENT_ID.c_str(), varMqtt.MQTT_USER, varMqtt.MQTT_PASSWORD)) {
-      Serial.println("CONECTADO!!!");
-      client.subscribe(varMqtt.TOPIC_CMND_ALARM);
-      client.subscribe(varMqtt.TOPIC_SENSOR);
-      client.subscribe(varMqtt.TOPIC_CMND_ALARM_BYPASS);
-      clientConnected = true;
-      canArm = "y";
-      consultAllState();
-      
-    } else if (client.state() == -1) {
-      clientConnected = false;
-      Serial.print("[MQTT] FALHOU, STATE = ");
-      Serial.print(client.state());
-      Serial.println("PROXIMA TENTATIVA EM 3s...");
-      delay(3000);
-
-    } else if (client.state() == -2){
-      Serial.println("[MQTT] FALHOU, STATE = -2");
-      Serial.println("[ESP32] Reiniciando ESP...");
-      clientConnected = false;
-      ESP.restart();
-
-    } else {
-      clientConnected = false;
-      Serial.print("[MQTT] FALHOU, STATE = ");
-      Serial.print(client.state());
-      Serial.println("PROXIMA TENTATIVA EM 5s...");
-      delay(5000);
-    }
-  }
+void MqttManager::mqttSetConfigs() {
+    espClient.setCACert(ROOT_CA);
+    client.setServer(varMqtt.MQTT_SERVER, varMqtt.MQTT_PORT);
+    client.setCallback(callback);
 }
 
-void MqttManager::mqttSetConfigs(){
-  espClient.setCACert(ROOT_CA);
-  client.setServer(varMqtt.MQTT_SERVER, varMqtt.MQTT_PORT);
-  client.setCallback(callback);
+void MqttManager::mqttRun() {
+    if (!client.connected())
+        reconnect();
+    else
+        client.loop();
 }
 
-void MqttManager::mqttRun(){
-  if (!client.connected()) {
-      reconnect();
-  } 
-  client.loop();
+void MqttManager::updateStateMqttApi(String device, String state) {
+    String topic = "status/alarm";
+    String stateMqtt = "{\"device\": \"" + device + "\", \"newState\": " + state + "}";
+    Serial.println("[MQTT] ATUALIZANDO STATUS MQTT >>> Service: " + device + " Status: " + state);
+
+    client.publish(topic.c_str(), stateMqtt.c_str());
+    controlApi.updateStatus(device, state);
 }
 
-void MqttManager::updateStateMqttApi(String service, String state){
-  String topic = "status/" + service;
-  Serial.println("[MQTT] ATUALIZANDO STATUS MQTT >>> Service: " + service + " Status: " + state);
-
-  client.publish(topic.c_str(), state.c_str());
-  delay(500);
-  
-  controlApi.updateStatus(service, state);
-  delay(500);
-}
-
-void MqttManager::updateStateMqtt(String topic, String msg){
-  client.publish(topic.c_str(), msg.c_str());
+void MqttManager::updateStateMqtt(String topic, String msg) {
+    client.publish(topic.c_str(), msg.c_str());
 }
 
 void MqttManager::consultAllState(){
-  while(result.equals("ERROR")){
-    result = controlApi.getStatus("alarme");
-  }
-  cmndAlarm(result, "\"Central\"");
-  delay(200);
-
-  controlIO.verifySensorsBypass();
+    while (result.equals("ERROR"))
+        result = controlApi.getStatus("alarme");
+    
+    cmndAlarm(result, "\"Central\"");
+    controlIO.verifySensorsBypass();
 }
 
 void MqttManager::cmndAlarm(String cmnd, String user){
-  Serial.println("[ESP32] COMANDO DE ALARME FOI REQUISITADO PELO USUÁRIO: " + user);
-  if(cmnd.equals(varMqtt.CMND_ARM)){
-    if(controlIO.verifyCanArm()){
-      controlIO.panelArm();
-      Serial.println("[ESP32] PAINEL ARMADO.");
+    Serial.println("[ESP32] COMANDO DE ALARME FOI REQUISITADO PELO USUÁRIO: " + user);
 
-      if(user.equals("\"Alexa\"") || user.equals("\"Mobile\"")){
-        controlApi.createEvent("Casa Armado", user, "arm");
-      }
+    if (cmnd.equals(varMqtt.CMND_ARM)){
+        if (controlIO.verifyCanArm()){
+            controlIO.panelArm();
+            Serial.println("[ESP32] PAINEL ARMADO.");
 
-    } else{
-      Serial.println("[ESP32] NÃO FOI POSSIVEL EFETUAR O ARME, EXISTE SETOR ABERTO.");
-      controlMqtt.updateStateMqtt("status/error/alarme", "Existe setor aberto");
-      return;
-    }
-  } 
-  else if (cmnd.equals(varMqtt.CMND_DESARM)){ 
-    controlIO.panelDisarm();
-    Serial.println("[ESP32] PAINEL DESARMADO.");
-    if(user.equals("\"Alexa\"") || user.equals("\"Mobile\"")){
-      controlApi.createEvent("Casa Desarmado", user, "disarm");
-    }
-  } 
-  else if (cmnd.equals(varMqtt.CMND_VIOLED)){ 
-    controlIO.setPanelVioled(true);
-    controlApi.createEvent("Casa em Disparo", user, "violed");
-  } 
-  else { Serial.println("[ESP32] COMANDO NAO RECONHECIDO: " + cmnd); }
+            if (user.equals("\"Alexa\"") || user.equals("\"Mobile\""))
+                controlApi.createEvent("Casa Armado", user, "arm");
 
-  currentAlarmState = cmnd;
-  Serial.println("[ESP32] STATUS DO ALARME INTERNO ATUALIZANDO PARA: " + currentAlarmState);
-  controlMqtt.updateStateMqttApi("alarme", cmnd);
+        } else {
+            Serial.println("[ESP32] NÃO FOI POSSIVEL EFETUAR O ARME, EXISTE SETOR ABERTO.");
+            controlMqtt.updateStateMqtt("status/error/alarme", "Existe setor aberto");
+            return;
+        }
+
+    } else if (cmnd.equals(varMqtt.CMND_DESARM)) {
+        controlIO.panelDisarm();
+        Serial.println("[ESP32] PAINEL DESARMADO.");
+
+        if (user.equals("\"Alexa\"") || user.equals("\"Mobile\""))
+            controlApi.createEvent("Casa Desarmado", user, "disarm");
+
+    } else if (cmnd.equals(varMqtt.CMND_VIOLED)) {
+        controlIO.setPanelVioled(true);
+        controlApi.createEvent("Casa em Disparo", user, "violed");
+
+    } else
+        Serial.println("[ESP32] COMANDO NAO RECONHECIDO: " + cmnd);
+
+    currentAlarmState = cmnd;
+    Serial.println("[ESP32] STATUS DO ALARME INTERNO ATUALIZANDO PARA: " + currentAlarmState);
+    controlMqtt.updateStateMqttApi("alarme", cmnd);
 }
 
 String MqttManager::getcurrentAlarmState(){
-  return currentAlarmState;
+    return currentAlarmState;
 }
 
 boolean MqttManager::getClientConnected(){
-  return clientConnected;
+    return clientConnected;
 }
 
 void MqttManager::setCanArm(String validation){
-  canArm = validation;
+    canArm = validation;
 }
 
 String MqttManager::getCanArm(){
-  return canArm;
+    return canArm;
 }
-
-
-
